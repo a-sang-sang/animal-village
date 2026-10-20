@@ -1,0 +1,664 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>숨바꼭질 동물마을</title>
+<meta name="description" content="색 구역과 가로·세로 줄마다 동물 한 마리씩, 서로 붙지 않게 숨은 동물을 찾는 논리 퍼즐 게임">
+<meta name="theme-color" content="#3B6FF5">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icons/icon-48.png" sizes="48x48">
+<link rel="icon" href="icons/icon-192.png" sizes="192x192">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<style>
+@font-face{font-family:"Jua";src:url(fonts/Jua-Regular.ttf) format("truetype");font-display:swap}
+@font-face{font-family:"Gothic A1";src:url(fonts/GothicA1-Regular.ttf) format("truetype");font-weight:400;font-display:swap}
+@font-face{font-family:"Gothic A1";src:url(fonts/GothicA1-SemiBold.ttf) format("truetype");font-weight:600;font-display:swap}
+@font-face{font-family:"Gothic A1";src:url(fonts/GothicA1-ExtraBold.ttf) format("truetype");font-weight:800;font-display:swap}
+:root{color-scheme:light;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+body{margin:0;font:14px system-ui}
+img{max-width:100%}
+[hidden]{display:none!important}
+.legal{max-width:480px;margin:0 auto;padding:0 16px 24px;text-align:center;font-size:12px}
+.legal a{color:var(--ink-2)}
+</style>
+<script>window.STORE_BUILD=true;</script>
+</head>
+<body>
+<style>
+/* Layout: one narrow column like a phone mini-app — home cards, then a full game view with the board as the hero */
+:root{
+  --bg:#EEF1F6; --surface:#FFFFFF; --surface-2:#F5F7FA; --ink:#1B2230; --ink-2:#5A6475; --line:#D3D9E3;
+  --accent:#3B6FF5; --accent-ink:#FFFFFF; --accent-soft:#E3EBFE; --bad:#E5484D; --bad-soft:rgba(229,72,77,.28); --good:#1F9D6A; --gold:#F2B227;
+  --grid:#26303F;
+  --r0:#FFD7C2; --r1:#FFF0A8; --r2:#CDEFC4; --r3:#BFE3F5; --r4:#D9CFF7; --r5:#F8C9DD; --r6:#C9EDE6; --r7:#EBDDC6; --r8:#D3DCE8; --r9:#E4F2B0;
+  --display:"Jua","Gothic A1",system-ui,sans-serif; --body:"Gothic A1",system-ui,-apple-system,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#12161E; --surface:#1C222D; --surface-2:#242B37; --ink:#EEF1F6; --ink-2:#9AA4B5; --line:#343D4C;
+  --accent:#6E95FF; --accent-ink:#0E1420; --accent-soft:#25324F; --bad:#FF6B6F; --bad-soft:rgba(255,107,111,.35); --good:#3CCB8D; --gold:#F5C24A;
+  --grid:#0B0E14;
+  --r0:#7A4E3B; --r1:#736531; --r2:#46693F; --r3:#335C72; --r4:#574B7E; --r5:#74415A; --r6:#336862; --r7:#665944; --r8:#4B5666; --r9:#5B6A2E;
+  color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#12161E; --surface:#1C222D; --surface-2:#242B37; --ink:#EEF1F6; --ink-2:#9AA4B5; --line:#343D4C;
+  --accent:#6E95FF; --accent-ink:#0E1420; --accent-soft:#25324F; --bad:#FF6B6F; --bad-soft:rgba(255,107,111,.35); --good:#3CCB8D; --gold:#F5C24A;
+  --grid:#0B0E14;
+  --r0:#7A4E3B; --r1:#736531; --r2:#46693F; --r3:#335C72; --r4:#574B7E; --r5:#74415A; --r6:#336862; --r7:#665944; --r8:#4B5666; --r9:#5B6A2E;
+  color-scheme:dark}
+*{box-sizing:border-box}
+html,body{min-height:100%}
+body{background:var(--bg);color:var(--ink);font-family:var(--body);-webkit-tap-highlight-color:transparent}
+.app{max-width:480px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:12px 32px;display:flex;flex-direction:column;gap:14px}
+h1,h2,h3{margin:0;font-family:var(--display);font-weight:400;text-wrap:balance}
+button{font:inherit;color:inherit;cursor:pointer}
+button:focus-visible,.cell:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+.num{font-variant-numeric:tabular-nums}
+
+/* Home */
+.brand{display:flex;align-items:center;gap:10px;padding-top:6px}
+.brand svg{width:44px;height:44px;flex:none}
+.brand h1{font-size:28px;line-height:1.1}
+.brand p{margin:2px 0 0;color:var(--ink-2);font-size:13px}
+.card{background:var(--surface);border-radius:20px;padding:18px;display:flex;flex-direction:column;gap:12px}
+.daily{background:var(--accent);color:var(--accent-ink);position:relative;overflow:hidden}
+.daily .eyebrow{font-size:12px;font-weight:600;letter-spacing:.06em;opacity:.85}
+.daily h2{font-size:30px}
+.daily .meta{display:flex;gap:8px;flex-wrap:wrap;font-size:13px;font-weight:600}
+.chip{display:inline-flex;align-items:center;gap:4px;padding:5px 10px;border-radius:999px;background:rgba(255,255,255,.2)}
+.daily .peek{position:absolute;right:-6px;bottom:-10px;width:110px;height:110px;opacity:.95;pointer-events:none}
+.btn{border:0;border-radius:14px;padding:14px 16px;font-weight:800;font-size:16px;background:var(--accent);color:var(--accent-ink)}
+.daily .btn{background:var(--accent-ink);color:var(--accent);align-self:flex-start;position:relative;z-index:1}
+.btn.ghost{background:var(--surface-2);color:var(--ink)}
+.row{display:flex;justify-content:space-between;align-items:center;gap:12px}
+.stage-card h2{font-size:22px}
+.sub{color:var(--ink-2);font-size:13px;margin:0}
+.bar{height:8px;border-radius:99px;background:var(--surface-2);overflow:hidden}
+.bar i{display:block;height:100%;background:var(--accent);border-radius:99px}
+.path{display:flex;gap:6px;overflow-x:auto;padding-bottom:2px;scrollbar-width:none}
+.path::-webkit-scrollbar{display:none}
+.node{flex:none;width:44px;height:52px;border-radius:12px;background:var(--surface-2);border:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;font-weight:800;font-size:14px}
+.node small{font-size:9px;letter-spacing:1px;color:var(--gold);font-weight:800;min-height:10px}
+.node.cur{background:var(--accent);color:var(--accent-ink)}
+.node.lock{opacity:.45;cursor:default}
+.rules{display:grid;gap:8px;margin:0;padding:0;list-style:none}
+.rules li{display:flex;gap:10px;align-items:flex-start;font-size:14px;line-height:1.5}
+.rules b{flex:none;width:22px;height:22px;border-radius:7px;background:var(--accent-soft);color:var(--accent);display:grid;place-items:center;font-size:12px}
+.skins{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.skin{border:2px solid transparent;background:var(--surface-2);border-radius:14px;padding:8px 4px;display:flex;flex-direction:column;align-items:center;gap:2px;font-size:12px;font-weight:600}
+.skin svg{width:44px;height:44px}
+.skin.on{border-color:var(--accent)}
+.skin.locked{cursor:default;color:var(--ink-2)}
+.skin.locked svg{filter:grayscale(1) brightness(.6);opacity:.35}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;text-align:center}
+.stats div{background:var(--surface-2);border-radius:12px;padding:10px 4px}
+.stats strong{display:block;font-size:20px;font-family:var(--display);font-weight:400}
+.stats span{font-size:11px;color:var(--ink-2)}
+
+/* Game */
+.topbar{display:flex;align-items:center;gap:8px}
+.icon-btn{border:0;background:var(--surface);width:40px;height:40px;border-radius:12px;display:grid;place-items:center;flex:none}
+.icon-btn svg{width:20px;height:20px;stroke:var(--ink);fill:none;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
+.topbar .t{flex:1;min-width:0}
+.topbar h2{font-size:20px}
+.topbar .sub{font-size:12px}
+.timer{font-family:var(--display);font-size:22px;padding:6px 12px;background:var(--surface);border-radius:12px}
+.status{display:flex;gap:6px;flex-wrap:wrap}
+.status span{font-size:12px;font-weight:600;padding:5px 10px;border-radius:999px;background:var(--surface);color:var(--ink-2)}
+.status span.ok{color:var(--good)}
+.status span.ng{color:var(--bad)}
+.board-wrap{background:var(--grid);padding:3px;border-radius:14px;width:100%;max-width:100%;aspect-ratio:1;touch-action:none;user-select:none;-webkit-user-select:none}
+.board{display:grid;width:100%;height:100%;border-radius:11px;overflow:hidden}
+.cell{position:relative;border:0;padding:0;display:grid;place-items:center;border-top:1px solid rgba(0,0,0,.12);border-left:1px solid rgba(0,0,0,.12)}
+.cell.tt{border-top:2.5px solid var(--grid)}
+.cell.tl{border-left:2.5px solid var(--grid)}
+.cell .x{width:30%;height:30%;color:var(--ink);opacity:.5}
+.cell .x.auto{opacity:.22}
+.cell svg.cat{width:84%;height:84%;animation:pop .22s ease-out}
+.cell.bad::after{content:"";position:absolute;inset:0;background:var(--bad-soft);pointer-events:none}
+.cell.bad svg.cat{animation:shake .3s}
+.cell.hint::before{content:"";position:absolute;inset:3px;border-radius:6px;border:2.5px dashed var(--accent);pointer-events:none}
+.board.won svg.cat{animation:hop .6s ease-in-out both}
+@keyframes pop{from{transform:scale(.4)}to{transform:scale(1)}}
+@keyframes shake{25%{transform:translateX(-3px)}75%{transform:translateX(3px)}}
+@keyframes hop{40%{transform:translateY(-22%) scale(1.08)}}
+.tools{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.tool{border:0;background:var(--surface);border-radius:14px;padding:10px 4px;display:flex;flex-direction:column;align-items:center;gap:4px;font-size:12px;font-weight:600}
+.tool svg{width:22px;height:22px;stroke:var(--ink);fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.tool.on{background:var(--accent-soft);color:var(--accent)}
+.tool.on svg{stroke:var(--accent)}
+.tool:disabled{opacity:.4;cursor:default}
+.howto{font-size:12px;color:var(--ink-2);text-align:center;margin:0;line-height:1.6}
+
+/* Overlay */
+.overlay{position:fixed;inset:0;background:rgba(10,14,22,.5);display:flex;align-items:flex-end;justify-content:center;z-index:20;padding:16px;padding-bottom:calc(16px + env(safe-area-inset-bottom,0px))}
+.sheet{background:var(--surface);border-radius:24px;padding:24px 20px;width:100%;max-width:440px;display:flex;flex-direction:column;gap:14px;text-align:center;animation:up .3s ease-out}
+@keyframes up{from{transform:translateY(40px);opacity:0}}
+.sheet h2{font-size:28px}
+.stars{display:flex;justify-content:center;gap:6px}
+.stars svg{width:40px;height:40px}
+.result{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.result div{background:var(--surface-2);border-radius:12px;padding:10px}
+.result strong{display:block;font-family:var(--display);font-weight:400;font-size:22px}
+.result span{font-size:12px;color:var(--ink-2)}
+.unlock{display:flex;align-items:center;gap:10px;background:var(--accent-soft);border-radius:14px;padding:10px 12px;text-align:left;font-size:14px}
+.unlock svg{width:44px;height:44px;flex:none}
+.share-text{width:100%;font:inherit;font-size:13px;border:1px solid var(--line);background:var(--surface-2);color:var(--ink);border-radius:10px;padding:8px;resize:none}
+.sheet .btns{display:grid;gap:8px}
+.toast{position:fixed;left:50%;bottom:calc(24px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:12px;font-size:14px;font-weight:600;z-index:30}
+.mock-ad{position:fixed;inset:0;z-index:40;background:#0B0F17;color:#fff;display:flex;flex-direction:column;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+.mock-top{display:flex;justify-content:space-between;align-items:center;padding:12px max(16px,env(safe-area-inset-right,0px)) 12px max(16px,env(safe-area-inset-left,0px));font-size:13px;opacity:.85}
+.mock-top button{border:1px solid rgba(255,255,255,.4);background:transparent;color:#fff;border-radius:999px;padding:6px 14px;font-weight:600}
+.mock-body{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;text-align:center;padding-inline:16px}
+.mock-body p{margin:0;opacity:.7;font-size:14px}
+.mock-body strong{font-family:var(--display);font-weight:400;font-size:72px;line-height:1}
+.mock-bar{height:4px;background:rgba(255,255,255,.15)}
+.mock-bar i{display:block;height:100%;width:0;background:#6E95FF}
+.loading{min-height:60vh;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;color:var(--ink-2)}
+.loading svg{width:72px;height:72px;animation:hop 1s ease-in-out infinite}
+.loading p{margin:0;font-size:14px}
+@media (prefers-reduced-motion: reduce){*{animation:none!important}}
+</style>
+
+<div class="app" id="app"></div>
+<div id="layer"></div>
+
+<script>
+(function(){
+"use strict";
+/* ---------- random + puzzle generator ---------- */
+function rng(a){return function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
+function hash(s){let h=2166136261;for(let i=0;i<s.length;i++){h^=s.charCodeAt(i);h=Math.imul(h,16777619)}return h>>>0}
+function shuffle(a,r){for(let i=a.length-1;i>0;i--){const j=Math.floor(r()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a}
+const D4=[[1,0],[-1,0],[0,1],[0,-1]];
+function genSol(n,r){const cols=[],used=Array(n).fill(false);function bt(i){if(i===n)return true;for(const c of shuffle([...Array(n).keys()],r)){if(used[c]||(i>0&&Math.abs(c-cols[i-1])<=1))continue;used[c]=true;cols[i]=c;if(bt(i+1))return true;used[c]=false}return false}bt(0);return cols}
+function grow(n,sol,r){const g=Array.from({length:n},()=>Array(n).fill(-1));for(let i=0;i<n;i++)g[i][sol[i]]=i;let left=n*n-n;while(left>0){const f=[];for(let i=0;i<n;i++)for(let j=0;j<n;j++){if(g[i][j]!==-1)continue;for(const[a,b]of D4){const y=i+a,x=j+b;if(y>=0&&y<n&&x>=0&&x<n&&g[y][x]!==-1)f.push([i,j,g[y][x]])}}const p=f[Math.floor(r()*f.length)];g[p[0]][p[1]]=p[2];left--}return g}
+function solutions(n,g,lim){
+  // 칸이 가장 적게 남은 줄·구역부터 채워 보는 탐색으로 답을 lim개까지 찾습니다
+  const N=n*n,U=3*n,units=Array.from({length:U},()=>[]),uOf=new Int16Array(N*3),ES=[];
+  for(let k=0;k<N;k++){const r=(k/n)|0,c=k%n;uOf[k*3]=r;uOf[k*3+1]=n+c;uOf[k*3+2]=2*n+g[r][c];units[r].push(k);units[n+c].push(k);units[2*n+g[r][c]].push(k)}
+  for(let k=0;k<N;k++){const r=(k/n)|0,c=k%n,e=new Set(units[r]);for(const q of units[n+c])e.add(q);for(const q of units[2*n+g[r][c]])e.add(q);
+    for(let dr=-1;dr<=1;dr++)for(let dc=-1;dc<=1;dc++){const rr=r+dr,cc=c+dc;if(rr>=0&&rr<n&&cc>=0&&cc<n)e.add(rr*n+cc)}ES.push(Int16Array.from(e))}
+  const cand=new Uint8Array(N).fill(1),cnt=new Int16Array(U),done=new Uint8Array(U),sol=Array(n),out=[];
+  for(let u=0;u<U;u++)cnt[u]=units[u].length;
+  const off=q=>{cand[q]=0;cnt[uOf[q*3]]--;cnt[uOf[q*3+1]]--;cnt[uOf[q*3+2]]--};
+  const on=q=>{cand[q]=1;cnt[uOf[q*3]]++;cnt[uOf[q*3+1]]++;cnt[uOf[q*3+2]]++};
+  function dfs(depth){
+    if(depth===n){out.push(sol.slice());return}
+    let best=-1,bc=1e9;
+    for(let u=0;u<U;u++){if(done[u])continue;const v=cnt[u];if(v===0)return;if(v<bc){bc=v;best=u;if(v===1)break}}
+    const tried=[];
+    for(const k of units[best]){
+      if(!cand[k])continue;
+      const rem=[];for(const q of ES[k])if(cand[q]){off(q);rem.push(q)}
+      const a=uOf[k*3],b=uOf[k*3+1],c=uOf[k*3+2];done[a]=done[b]=done[c]=1;sol[a]=k%n;
+      dfs(depth+1);
+      done[a]=done[b]=done[c]=0;for(const q of rem)on(q);
+      if(out.length>=lim)break;
+      off(k);tried.push(k);
+    }
+    for(const k of tried)on(k);
+  }
+  dfs(0);return out;
+}
+function connectedWithout(n,g,q,ri,rj){let start=null,total=0;for(let i=0;i<n;i++)for(let j=0;j<n;j++)if(g[i][j]===q&&!(i===ri&&j===rj)){total++;if(!start)start=[i,j]}if(!total)return false;const seen=new Set([start[0]*n+start[1]]),st=[start];while(st.length){const[i,j]=st.pop();for(const[a,b]of D4){const y=i+a,x=j+b;if(y<0||y>=n||x<0||x>=n||(y===ri&&x===rj)||g[y][x]!==q)continue;const k=y*n+x;if(!seen.has(k)){seen.add(k);st.push([y,x])}}}return seen.size===total}
+function makePuzzle(n,seed){
+  const r=rng(seed);
+  for(let t=0;t<400;t++){
+    const s=genSol(n,r),g=grow(n,s,r);
+    for(let step=0;step<120;step++){
+      const ss=solutions(n,g,2);
+      if(ss.length===1){const colors=shuffle([...Array(10).keys()],r);return{n,sol:s,reg:g,colors}}
+      const alt=ss.find(a=>a.some((c,i)=>c!==s[i]));const cand=[];
+      for(let i=0;i<n;i++){const j=alt[i];if(j===s[i])continue;const q=g[i][j];const nb=new Set();
+        for(const[a,b]of D4){const y=i+a,x=j+b;if(y>=0&&y<n&&x>=0&&x<n&&g[y][x]!==q)nb.add(g[y][x])}
+        if(nb.size&&connectedWithout(n,g,q,i,j))for(const v of nb)cand.push([i,j,v])}
+      if(!cand.length)break;const c=cand[Math.floor(r()*cand.length)];g[c[0]][c[1]]=c[2];
+    }
+  }
+  return null;
+}
+
+
+/* ---------- 난이도 채점: 사람이 쓰는 추리 기법으로 풀어 보고, 얼마나 깊은 추리가 필요했는지 점수로 매겨요 ----------
+   1단계 기법: 한 줄·한 구역에 남은 칸이 하나면 거기
+   2단계 기법: 여기에 두면 다른 구역이 통째로 막히는 칸 지우기, 한 구역이 한 줄에 몰려 있으면 그 줄의 나머지 지우기
+   3단계 기법: 구역 k개가 줄 k개 안에 몰려 있으면 그 줄들의 나머지 지우기
+   점수 = 2단계 기법 횟수 + 3단계 기법 횟수×4. 이것만으로 안 풀리는(찍어야 하는) 판은 쓰지 않아요. */
+function rate(n,g){
+  const N=n*n,cand=new Uint8Array(N).fill(1),cat=new Uint8Array(N);
+  const rows=[],cols=[],regs=Array.from({length:n},()=>[]);
+  for(let i=0;i<n;i++){const a=[],b=[];for(let j=0;j<n;j++){a.push(i*n+j);b.push(j*n+i)}rows.push(a);cols.push(b)}
+  for(let k=0;k<N;k++)regs[g[Math.floor(k/n)][k%n]].push(k);
+  const units=[...rows,...cols,...regs];
+  const R=k=>Math.floor(k/n),C=k=>k%n,G=k=>g[R(k)][C(k)];
+  const ES=[];for(let k=0;k<N;k++){const e=[];for(let q=0;q<N;q++){if(q!==k&&(R(q)===R(k)||C(q)===C(k)||G(q)===G(k)||(Math.abs(R(q)-R(k))<=1&&Math.abs(C(q)-C(k))<=1)))e.push(q)}ES.push(e)}
+  const sat=u=>u.some(k=>cat[k]);
+  const place=k=>{cat[k]=1;cand[k]=0;for(const q of ES[k])cand[q]=0};
+  const groups=[[regs,rows,R],[regs,cols,C],[rows,regs,G],[cols,regs,G]];
+  let maxT=1,t2=0,t3=0,placed=0;
+  function t1(){let ch=0;for(const u of units){if(sat(u))continue;const c=u.filter(k=>cand[k]);if(!c.length)return -1;if(c.length===1){place(c[0]);placed++;ch=1}}return ch}
+  function tier2(){
+    for(let k=0;k<N;k++){if(!cand[k])continue;const E=new Set(ES[k]);
+      for(const u of units){if(sat(u)||u.includes(k))continue;if(u.every(q=>!cand[q]||E.has(q))){cand[k]=0;return true}}}
+    for(const[A,B,f]of groups)for(const u of A){if(sat(u))continue;const ids=new Set(u.filter(k=>cand[k]).map(f));
+      if(ids.size===1){let ch=false;for(const q of B[[...ids][0]])if(cand[q]&&!u.includes(q)){cand[q]=0;ch=true}if(ch)return true}}
+    return false;
+  }
+  function combos(arr,k,st,cur,out){if(cur.length===k){out.push(cur.slice());return out}for(let i=st;i<arr.length;i++){cur.push(arr[i]);combos(arr,k,i+1,cur,out);cur.pop()}return out}
+  function tier3(){
+    for(let kk=2;kk<=Math.min(4,n-1);kk++)for(const[A,B,f]of groups){
+      for(const cmb of combos(A.filter(u=>!sat(u)),kk,0,[],[])){const ids=new Set(),inSet=new Set();
+        for(const u of cmb)for(const q of u){inSet.add(q);if(cand[q])ids.add(f(q))}
+        if(ids.size===kk){let ch=false;for(const id of ids)for(const q of B[id])if(cand[q]&&!inSet.has(q)){cand[q]=0;ch=true}if(ch)return true}}}
+    return false;
+  }
+  for(let guard=0;guard<600;guard++){
+    const r=t1();if(r<0)return{maxT:4,score:99};if(r)continue;if(placed===n)break;
+    if(tier2()){t2++;maxT=Math.max(maxT,2);continue}
+    if(tier3()){t3++;maxT=3;continue}
+    return{maxT:4,score:99};
+  }
+  return{maxT,score:t2+4*t3};
+}
+/* 같은 씨앗에서 후보 판을 여러 개 만들고, 원하는 난이도(p: 0 쉬움 ~ 1 어려움) 위치의 판을 고릅니다 */
+function buildPuzzle(n,seed,p){
+  const K=n<=8?8:n===9?6:5,list=[];
+  for(let i=0;i<K*3&&list.length<K;i++){const m=makePuzzle(n,(seed+i*7919)>>>0);if(!m)continue;const r=rate(n,m.reg);if(r.maxT===4)continue;m.score=r.score;list.push(m)}
+  if(!list.length){let m=null;for(let t=0;!m;t++)m=makePuzzle(n,seed+t);m.score=0;return m}
+  list.sort((a,b)=>a.score-b.score);return list[Math.round(Math.max(0,Math.min(1,p))*(list.length-1))];
+}
+
+/* ---------- animals ---------- */
+const O="#2A2A2A";
+const eyes=(y,c,l,r)=>`<ellipse cx="${l||14.5}" cy="${y}" rx="2" ry="2.5" fill="${c||O}"/><ellipse cx="${r||25.5}" cy="${y}" rx="2" ry="2.5" fill="${c||O}"/><circle cx="${(l||14.5)+.6}" cy="${y-.8}" r=".7" fill="#fff"/><circle cx="${(r||25.5)+.6}" cy="${y-.8}" r=".7" fill="#fff"/>`;
+const smile=(y)=>`<path d="M20 ${y}c-.4 1.4-2.3 1.8-3.2.8M20 ${y}c.4 1.4 2.3 1.8 3.2.8" stroke="${O}" stroke-width="1" fill="none" stroke-linecap="round"/>`;
+const blush=(y)=>`<ellipse cx="10" cy="${y}" rx="2.2" ry="1.3" fill="#F4A7B3" opacity=".7"/><ellipse cx="30" cy="${y}" rx="2.2" ry="1.3" fill="#F4A7B3" opacity=".7"/>`;
+const ST=`stroke="${O}" stroke-width="1.4" stroke-linejoin="round"`;
+const ANIMALS=[
+ {id:"cat",name:"고양이",place:"고양이 골목",art:()=>`<path d="M7 17 8.5 4.5 17 11zM33 17 31.5 4.5 23 11z" fill="#E58A2B" ${ST}/><path d="M10 13.5 10.8 7.5 15 11zM30 13.5 29.2 7.5 25 11z" fill="#F4A7B3" opacity=".8"/><ellipse cx="20" cy="22" rx="14" ry="12" fill="#F4A340" ${ST}/><path d="M20 10.5v4M15.5 11.5l1.2 3.5M24.5 11.5l-1.2 3.5" stroke="#D9761C" stroke-width="1.8" stroke-linecap="round"/><path d="M7 23h4M7 26.5h4M33 23h-4M33 26.5h-4" stroke="#D9761C" stroke-width="1.6" stroke-linecap="round"/>${eyes(21)}<path d="M18.6 25.2h2.8L20 26.8z" fill="#E77F8E"/>${smile(26.8)}`},
+ {id:"dog",name:"강아지",place:"강아지 공원",art:()=>`<ellipse cx="20" cy="21" rx="12" ry="12" fill="#E2B07A" ${ST}/><path d="M9 11c-4.5 1.5-6 11-3 15.5 2.2 1.3 4.6-2 5.6-6.5zM31 11c4.5 1.5 6 11 3 15.5-2.2 1.3-4.6-2-5.6-6.5z" fill="#8A5A36" ${ST}/><ellipse cx="20" cy="27" rx="6.5" ry="4.8" fill="#FBEBD6"/>${eyes(20,O,15,25)}<ellipse cx="20" cy="24.8" rx="2.4" ry="1.7" fill="${O}"/>${smile(26.5)}<ellipse cx="20" cy="29.6" rx="1.4" ry="1.6" fill="#E77F8E"/>`},
+ {id:"rabbit",name:"토끼",place:"토끼 언덕",art:()=>`<ellipse cx="14" cy="9.5" rx="3.6" ry="9" fill="#F4F1F4" ${ST}/><ellipse cx="26" cy="9.5" rx="3.6" ry="9" fill="#F4F1F4" ${ST}/><ellipse cx="14" cy="10" rx="1.6" ry="6" fill="#F4A7B3"/><ellipse cx="26" cy="10" rx="1.6" ry="6" fill="#F4A7B3"/><ellipse cx="20" cy="25" rx="12.5" ry="10.5" fill="#F4F1F4" ${ST}/>${eyes(23.5,O,15.5,24.5)}${blush(27.5)}<path d="M18.8 27h2.4L20 28.4z" fill="#E77F8E"/>${smile(28.4)}<rect x="19" y="29.6" width="2" height="2.2" rx=".4" fill="#fff" stroke="${O}" stroke-width=".8"/>`},
+ {id:"hamster",name:"햄스터",place:"햄스터 도토리 창고",art:()=>`<circle cx="10" cy="11.5" r="4" fill="#E8A85A" ${ST}/><circle cx="30" cy="11.5" r="4" fill="#E8A85A" ${ST}/><circle cx="10" cy="11.5" r="2" fill="#F4A7B3"/><circle cx="30" cy="11.5" r="2" fill="#F4A7B3"/><ellipse cx="20" cy="22.5" rx="15.5" ry="12.5" fill="#E8A85A" ${ST}/><ellipse cx="20" cy="27.5" rx="10.5" ry="7" fill="#FFF6E8"/>${eyes(20.5,O,14,26)}${blush(26)}<ellipse cx="20" cy="24.6" rx="1.3" ry="1" fill="#E77F8E"/>${smile(25.6)}`},
+ {id:"fox",name:"여우",place:"여우 숲길",art:()=>`<path d="M7 17 9 3 18 11zM33 17 31 3 22 11z" fill="#E8772E" ${ST}/><path d="M8.3 8 9 3 12 6zM31.7 8 31 3 28 6z" fill="#3A2A22"/><path d="M5 18c0-5 6-9 15-9s15 4 15 9c0 6-7 14-15 16C12 32 5 24 5 18z" fill="#E8772E" ${ST}/><path d="M5.6 19.5c3.4 3.6 9 6 14.4 13.6-6.2-.8-12.6-6-14.4-13.6zM34.4 19.5c-3.4 3.6-9 6-14.4 13.6 6.2-.8 12.6-6 14.4-13.6z" fill="#FFF8F0"/>${eyes(20)}<ellipse cx="20" cy="30.6" rx="1.9" ry="1.4" fill="${O}"/>`},
+ {id:"panda",name:"판다",place:"판다 대나무숲",art:()=>`<circle cx="9" cy="11" r="5" fill="${O}"/><circle cx="31" cy="11" r="5" fill="${O}"/><ellipse cx="20" cy="22" rx="14" ry="12" fill="#FFFFFF" ${ST}/><ellipse cx="14" cy="21" rx="3.6" ry="4.6" transform="rotate(-25 14 21)" fill="${O}"/><ellipse cx="26" cy="21" rx="3.6" ry="4.6" transform="rotate(25 26 21)" fill="${O}"/><circle cx="14.4" cy="20.6" r="1.5" fill="#fff"/><circle cx="25.6" cy="20.6" r="1.5" fill="#fff"/><circle cx="14.6" cy="20.8" r=".8" fill="${O}"/><circle cx="25.4" cy="20.8" r=".8" fill="${O}"/><ellipse cx="20" cy="25.6" rx="2.2" ry="1.5" fill="${O}"/>${smile(27)}${blush(28)}`},
+ {id:"penguin",name:"펭귄",place:"펭귄 빙하",art:()=>`<ellipse cx="20" cy="21" rx="14" ry="13" fill="#2E3A4A" ${ST}/><path d="M20 15c-2-4-11-4-11 4 0 7 5 12 11 12s11-5 11-12c0-8-9-8-11-4z" fill="#FFFFFF"/>${eyes(20.5,O,15,25)}<path d="M16.5 24h7L20 28.2z" fill="#F5A623" stroke="${O}" stroke-width="1" stroke-linejoin="round"/>${blush(26.5)}`},
+ {id:"frog",name:"개구리",place:"개구리 연못",art:()=>`<ellipse cx="20" cy="24" rx="15.5" ry="10.5" fill="#6CC25A" ${ST}/><circle cx="12" cy="13" r="6" fill="#6CC25A" ${ST}/><circle cx="28" cy="13" r="6" fill="#6CC25A" ${ST}/><circle cx="12" cy="13" r="3.8" fill="#fff"/><circle cx="28" cy="13" r="3.8" fill="#fff"/><circle cx="12.4" cy="13.4" r="2" fill="${O}"/><circle cx="27.6" cy="13.4" r="2" fill="${O}"/><path d="M10.5 25c4 5 15 5 19 0" stroke="${O}" stroke-width="1.4" fill="none" stroke-linecap="round"/>${blush(25)}`},
+ {id:"raccoon",name:"너구리",place:"너구리 산마을",art:()=>`<path d="M6.5 16 8.5 5 16.5 10.5zM33.5 16 31.5 5 23.5 10.5z" fill="#8E8F94" ${ST}/><path d="M9.2 12 9.8 8 13 10zM30.8 12 30.2 8 27 10z" fill="#3A3A3F"/><ellipse cx="20" cy="22" rx="14" ry="11.5" fill="#A2A4AA" ${ST}/><ellipse cx="20" cy="27.5" rx="7.5" ry="5" fill="#F2F2F2"/><path d="M6.5 21c3-4 8-4.5 11-1.2 1 1 1.6 1.2 2.5 1.2s1.5-.2 2.5-1.2c3-3.3 8-2.8 11 1.2-2 3.2-7 4.2-11 2.2-1-.5-1.8-.6-2.5-.6s-1.5.1-2.5.6c-4 2-9 1-11-2.2z" fill="#2E2F33"/><circle cx="14.5" cy="21" r="1.8" fill="#fff"/><circle cx="25.5" cy="21" r="1.8" fill="#fff"/><circle cx="14.7" cy="21.2" r="1" fill="${O}"/><circle cx="25.3" cy="21.2" r="1" fill="${O}"/><ellipse cx="20" cy="26" rx="2" ry="1.4" fill="${O}"/>${smile(27.3)}`},
+ {id:"owl",name:"부엉이",place:"부엉이 밤숲",art:()=>`<path d="M8 14 7 3.5 15.5 9zM32 14 33 3.5 24.5 9z" fill="#8A6240" ${ST}/><ellipse cx="20" cy="21" rx="14" ry="13" fill="#A8794F" ${ST}/><circle cx="14" cy="19.5" r="6.2" fill="#F1DDBF"/><circle cx="26" cy="19.5" r="6.2" fill="#F1DDBF"/><circle cx="14" cy="19.5" r="4" fill="#F5C542" stroke="${O}" stroke-width=".8"/><circle cx="26" cy="19.5" r="4" fill="#F5C542" stroke="${O}" stroke-width=".8"/><circle cx="14" cy="19.8" r="2.2" fill="${O}"/><circle cx="26" cy="19.8" r="2.2" fill="${O}"/><circle cx="14.7" cy="19" r=".8" fill="#fff"/><circle cx="26.7" cy="19" r=".8" fill="#fff"/><path d="M18.4 24h3.2L20 28.5z" fill="#E39A2B" stroke="${O}" stroke-width=".9" stroke-linejoin="round"/><path d="M15 30.5l1.5-1 1.5 1M22 30.5l1.5-1 1.5 1" stroke="#7A5434" stroke-width="1" fill="none" stroke-linecap="round"/>`},
+ {id:"otter",name:"수달",place:"수달 냇가",art:()=>`<circle cx="9.5" cy="14" r="3.2" fill="#8B5E3C" ${ST}/><circle cx="30.5" cy="14" r="3.2" fill="#8B5E3C" ${ST}/><ellipse cx="20" cy="22" rx="14" ry="12" fill="#9C6B45" ${ST}/><ellipse cx="20" cy="27" rx="9" ry="6.2" fill="#E9D2B4"/>${eyes(19.5,O,14,26)}<ellipse cx="20" cy="24.5" rx="2.7" ry="1.9" fill="${O}"/>${smile(26.4)}<circle cx="15.5" cy="27.5" r=".55" fill="#7A5434"/><circle cx="14" cy="26" r=".55" fill="#7A5434"/><circle cx="24.5" cy="27.5" r=".55" fill="#7A5434"/><circle cx="26" cy="26" r=".55" fill="#7A5434"/>`},
+ {id:"tiger",name:"호랑이",place:"호랑이 산",art:()=>`<circle cx="9" cy="11.5" r="4.5" fill="#F08A24" ${ST}/><circle cx="31" cy="11.5" r="4.5" fill="#F08A24" ${ST}/><circle cx="9" cy="11.5" r="2.2" fill="#FFF3E6"/><circle cx="31" cy="11.5" r="2.2" fill="#FFF3E6"/><ellipse cx="20" cy="22" rx="14" ry="12" fill="#F08A24" ${ST}/><ellipse cx="20" cy="27.3" rx="7.8" ry="5.6" fill="#FFF8EE"/><path d="M20 10.5v4.2M16 11.4l1 3.4M24 11.4l-1 3.4M6.5 20h4.5M6.8 24h4M33.5 20h-4.5M33.2 24h-4" stroke="${O}" stroke-width="1.7" stroke-linecap="round"/>${eyes(20.5)}<path d="M18.4 24.8h3.2L20 26.6z" fill="#E77F8E"/>${smile(26.6)}`}
+];
+function animalSVG(a,cls){return `<svg class="${cls||""}" viewBox="0 0 40 40" aria-hidden="true">${a.art()}</svg>`}
+const CH=5; // 한 동네 = 5단계
+function chapterOf(l){return Math.floor((l-1)/CH)}
+function animalOf(l){return ANIMALS[chapterOf(l)%ANIMALS.length]}
+function placeOf(l){const c=chapterOf(l),lap=Math.floor(c/ANIMALS.length);return animalOf(l).place+(lap?" "+(lap+1)+"번째":"")}
+function iga(w){const c=w.charCodeAt(w.length-1)-0xAC00;return w+(c>=0&&c<11172&&c%28?"이":"가")}
+function unlockedCount(){return Math.min(ANIMALS.length,chapterOf(save.stage)+1)}
+function dailyAnimal(){return ANIMALS[((dailyNo()-1)%ANIMALS.length+ANIMALS.length)%ANIMALS.length]}
+const STAR=(on)=>`<svg viewBox="0 0 24 24"><path d="M12 2.8l2.8 5.9 6.4.8-4.7 4.4 1.2 6.4L12 17.2l-5.7 3.1 1.2-6.4L2.8 9.5l6.4-.8z" fill="${on?"var(--gold)":"var(--surface-2)"}" stroke="${on?"var(--gold)":"var(--line)"}" stroke-width="1.2" stroke-linejoin="round"/></svg>`;
+const XSVG=(auto)=>`<svg class="x${auto?" auto":""}" viewBox="0 0 10 10"><path d="M2 2l6 6M8 2l-6 6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>`;
+
+/* ---------- 보상형 광고 ----------
+   토스 앱인토스 미니앱으로 올릴 때는 아래 sdk 부분만 실제 SDK로 바꾸면 됩니다.
+     import { loadFullScreenAd, showFullScreenAd } from '@apps-in-toss/web-framework';
+     window.AIT_ADS = { loadFullScreenAd, showFullScreenAd };
+   - 개발 중에는 테스트 광고 ID(ait-ad-test-rewarded-id)만 쓰고, 출시 때 콘솔에서 발급받은 ID로 바꿉니다.
+   - 힌트는 'userEarnedReward' 이벤트를 받았을 때만 줍니다. 광고를 닫기만 하면(dismissed) 주지 않아요.
+   - 광고는 버튼을 누를 때가 아니라 미리 불러 둡니다(게임 시작 시, 광고가 닫힌 직후).
+   window.AIT_ADS가 없으면(지금 이 미리보기처럼) 5초짜리 가짜 광고 화면으로 흐름만 보여줍니다. */
+const FREE_HINTS=1;
+const STORE_BUILD=!!window.STORE_BUILD; // 광고가 없는 스토어(MS 스토어 등) 판: 힌트를 광고 없이 바로 줘요
+const Ads=(function(){
+  const AD_GROUP_ID="ait-ad-test-rewarded-id";
+  let loaded=false, loading=false, unload=null;
+  const sdk=()=>{const a=window.AIT_ADS;return a&&a.loadFullScreenAd&&a.loadFullScreenAd.isSupported&&a.loadFullScreenAd.isSupported()?a:null};
+  function preload(){
+    const a=sdk();if(!a){loaded=true;return}
+    if(loaded||loading)return;loading=true;
+    try{unload=a.loadFullScreenAd({options:{adGroupId:AD_GROUP_ID},
+      onEvent:e=>{if(e.type==="loaded"){loaded=true;loading=false}},
+      onError:()=>{loading=false;loaded=false}})}catch(e){loading=false}
+  }
+  function showRewarded(cb){
+    const a=sdk();
+    if(!a)return mock(cb);
+    if(!loaded){preload();cb.onError&&cb.onError();return}
+    let rewarded=false,closed=false;loaded=false;
+    const close=()=>{if(closed)return;closed=true;cb.onClose&&cb.onClose(rewarded);preload()};
+    try{a.showFullScreenAd({options:{adGroupId:AD_GROUP_ID},
+      onEvent:e=>{
+        if(e.type==="userEarnedReward"&&!rewarded){rewarded=true;cb.onReward&&cb.onReward(e.data)}
+        if(e.type==="dismissed")close();
+        if(e.type==="failedToShow"){closed=true;cb.onError&&cb.onError();preload()}
+      },
+      onError:()=>{closed=true;cb.onError&&cb.onError();preload()}})}
+    catch(e){cb.onError&&cb.onError();preload()}
+  }
+  function mock(cb){
+    const SEC=5;let left=SEC,rewarded=false;
+    const el=document.createElement("div");el.className="mock-ad";el.setAttribute("role","dialog");el.setAttribute("aria-label","광고");
+    el.innerHTML=`<div class="mock-top"><span>광고 미리보기</span><button id="adClose" aria-label="광고 닫기">닫기</button></div>
+      <div class="mock-body"><p>여기에 토스 보상형 광고가 재생돼요</p><strong class="num" id="adLeft">${SEC}</strong><span id="adMsg">초 뒤 힌트를 받아요</span></div>
+      <div class="mock-bar"><i id="adBar"></i></div>`;
+    document.body.appendChild(el);
+    const bar=el.querySelector("#adBar");requestAnimationFrame(()=>{bar.style.transition=`width ${SEC}s linear`;bar.style.width="100%"});
+    const t=setInterval(()=>{left--;el.querySelector("#adLeft").textContent=Math.max(0,left);
+      if(left<=0&&!rewarded){rewarded=true;clearInterval(t);cb.onReward&&cb.onReward();el.querySelector("#adMsg").textContent="힌트를 받았어요. 닫고 계속하세요";el.querySelector("#adLeft").textContent="✓"}},1000);
+    el.querySelector("#adClose").onclick=()=>{clearInterval(t);el.remove();cb.onClose&&cb.onClose(rewarded)};
+  }
+  return{preload,showRewarded};
+})();
+
+/* ---------- storage ---------- */
+const KEY="nyang-hide-v1";
+const defaults={stage:1,stars:{},daily:{},streak:0,lastDaily:null,autoX:true,progress:null,cleared:0};
+let save=Object.assign({},defaults);
+try{const raw=localStorage.getItem(KEY);if(raw)save=Object.assign({},defaults,JSON.parse(raw))}catch(e){}
+function persist(){try{localStorage.setItem(KEY,JSON.stringify(save))}catch(e){}}
+
+/* ---------- date helpers ---------- */
+function ymd(d){return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0")}
+const today=ymd(new Date());
+const yday=(()=>{const d=new Date();d.setDate(d.getDate()-1);return ymd(d)})();
+const EPOCH=new Date(2026,9,19);
+function dailyNo(){const d=new Date();d.setHours(0,0,0,0);return Math.round((d-EPOCH)/86400000)+1}
+const DAILY=[{n:9,p:1,d:"어려움"},{n:7,p:.5,d:"쉬움"},{n:8,p:.4,d:"보통"},{n:8,p:.85,d:"보통"},{n:9,p:.5,d:"보통"},{n:9,p:.85,d:"어려움"},{n:10,p:.7,d:"어려움"}]; // 일~토
+function dailyCfg(){return DAILY[new Date().getDay()]}
+function dailySize(){return dailyCfg().n}
+const WEEK=["일","월","화","수","목","금","토"];
+
+/* ---------- stages ---------- */
+const SIZES=[[3,5],[8,6],[20,7],[40,8],[80,9],[Infinity,10]]; // [이 단계까지, 판 크기]
+function stageSize(l){for(const[e,n]of SIZES)if(l<=e)return n}
+function sizeRange(n){let a=1;for(const[e,m]of SIZES){if(m===n)return[a,e];a=e+1}}
+function stageP(l){const n=stageSize(l),[a,b]=sizeRange(n);if(n===5)return[0,.3,.6][l-1];if(n===10)return Math.min(1,.55+(l-a)/60);return .25+.75*(l-a)/(b-a)}
+function diffLabel(p){return p<.4?"쉬움":p<.75?"보통":"어려움"}
+function pid(kind,x){return kind==="daily"?"d2-"+x:"s2-"+x}
+function par(n,score){return n*n*2+(score||0)*6}
+function fmt(t){t=Math.floor(t);const m=Math.floor(t/60),s=t%60;return m+":"+String(s).padStart(2,"0")}
+
+/* ---------- UI ---------- */
+const app=document.getElementById("app"), layer=document.getElementById("layer");
+let game=null, tick=null;
+
+function toast(msg){const t=document.createElement("div");t.className="toast";t.textContent=msg;document.body.appendChild(t);setTimeout(()=>t.remove(),1800)}
+
+function home(){
+  stopTimer();game=null;layer.innerHTML="";
+  const dn=dailyNo(), ds=dailySize(), doneToday=!!save.daily[today];
+  const stage=save.stage, sz=stageSize(stage);
+  const [sizeStart,sizeEnd]=sizeRange(sz);
+  const ani=animalOf(stage), da=dailyAnimal(), chStart=chapterOf(stage)*CH+1, nextCh=chStart+CH, nextAni=animalOf(nextCh);
+  const totalStars=Object.values(save.stars).reduce((a,b)=>a+b,0);
+  let nodes="";
+  const from=Math.max(1,stage-3);
+  for(let l=from;l<from+12;l++){
+    const st=save.stars[l]||0, cls=l===stage?"cur":l>stage?"lock":"";
+    nodes+=`<button class="node ${cls}" data-lv="${l}" ${l>stage?"disabled":""} aria-label="${l}단계"><small>${"★".repeat(st)}</small>${l}</button>`;
+  }
+  app.innerHTML=`
+  <header class="brand">${animalSVG(ani)}<div><h1>숨바꼭질 동물마을</h1><p>동네마다 숨은 동물 친구를 찾아주세요</p></div></header>
+
+  <section class="card daily">
+    <span class="eyebrow">오늘의 퍼즐 · ${new Date().getMonth()+1}월 ${new Date().getDate()}일 ${WEEK[new Date().getDay()]}요일</span>
+    <h2>#${dn} ${da.name} ${ds}마리</h2>
+    <div class="meta"><span class="chip">${ds}×${ds}</span><span class="chip">${dailyCfg().d}</span><span class="chip">연속 ${save.lastDaily===today||save.lastDaily===yday?save.streak:0}일</span>${doneToday?`<span class="chip">완료 ${fmt(save.daily[today].time)}</span>`:""}</div>
+    <button class="btn" id="goDaily">${doneToday?"다시 풀기":save.progress&&save.progress.id===pid("daily",today)?"이어서 하기":"오늘 퍼즐 시작"}</button>
+    <div class="peek">${animalSVG(da)}</div>
+  </section>
+
+  <section class="card stage-card">
+    <div class="row"><div><h2>${stage}단계</h2><p class="sub">${placeOf(stage)} · ${sz}×${sz} 판 · 난이도 ${diffLabel(stageP(stage))}</p></div><button class="btn" id="goStage">${save.progress&&save.progress.id===pid("stage",stage)?"이어서":"도전"}</button></div>
+    <div class="bar" aria-hidden="true"><i style="width:${Math.round((stage-chStart)/CH*100)}%"></i></div>
+    <p class="sub">${nextCh-stage}단계 더 가면 ${nextAni.place}에서 ${iga(nextAni.name)} 기다려요${sz<10?` · ${sizeEnd+1}단계부터 ${sz+1}×${sz+1} 판`:""}</p>
+    <div class="path">${nodes}</div>
+  </section>
+
+  <section class="card">
+    <h3 style="font-size:19px">게임 규칙</h3>
+    <ul class="rules">
+      <li><b>1</b><span>같은 색 구역에는 동물이 딱 한 마리</span></li>
+      <li><b>2</b><span>가로 줄, 세로 줄에도 한 마리씩</span></li>
+      <li><b>3</b><span>동물끼리는 대각선까지 붙어 있을 수 없어요</span></li>
+    </ul>
+    <p class="sub">한 번 누르면 ×, 두 번 누르면 동물. 손가락으로 쓸면 ×를 여러 칸에 표시해요.</p>
+  </section>
+
+  <section class="card">
+    <div class="row"><h3 style="font-size:19px">동물 도감</h3><span class="sub num">${unlockedCount()}/${ANIMALS.length}</span></div>
+    <div class="skins">${ANIMALS.map((k,i)=>{const u=i<unlockedCount();return `<div class="skin ${u?"":"locked"} ${k.id===ani.id?"on":""}">${animalSVG(k)}<span>${u?k.name:(i*CH+1)+"단계"}</span></div>`}).join("")}</div>
+    <p class="sub">${unlockedCount()<ANIMALS.length?`${nextCh}단계에 도착하면 ${iga(nextAni.name)} 도감에 들어와요.`:"모든 동물 친구를 만났어요! 동네를 한 바퀴 더 돌아요."}</p>
+  </section>
+
+  <section class="card">
+    <div class="stats">
+      <div><strong class="num">${save.cleared}</strong><span>푼 퍼즐</span></div>
+      <div><strong class="num">${totalStars}</strong><span>모은 별</span></div>
+      <div><strong class="num">${save.streak}</strong><span>최근 연속일</span></div>
+    </div>
+  </section>`;
+  document.getElementById("goDaily").onclick=()=>start({kind:"daily"});
+  document.getElementById("goStage").onclick=()=>start({kind:"stage",level:save.stage});
+  app.querySelectorAll(".node:not(.lock)").forEach(b=>b.onclick=()=>start({kind:"stage",level:+b.dataset.lv}));
+  window.scrollTo(0,0);
+}
+
+function start(opt){
+  stopTimer();layer.innerHTML="";
+  const a=opt.kind==="daily"?dailyAnimal():animalOf(opt.level);
+  app.innerHTML=`<div class="loading">${animalSVG(a)}<p>${iga(a.name)} 숨을 곳을 고르는 중…</p></div>`;
+  setTimeout(()=>start2(opt),40);
+}
+function start2(opt){
+  let n,seed,id,label,subl,animal,pr;
+  if(opt.kind==="daily"){const c=dailyCfg();n=c.n;pr=c.p;seed=hash("daily2-"+today);id=pid("daily",today);label="오늘의 퍼즐 #"+dailyNo();animal=dailyAnimal();subl="오늘의 손님 "+animal.name+" · "+n+"×"+n+" · "+c.d}
+  else{n=stageSize(opt.level);pr=stageP(opt.level);seed=hash("stage2-"+opt.level);id=pid("stage",opt.level);label=opt.level+"단계";animal=animalOf(opt.level);subl=placeOf(opt.level)+" · "+n+"×"+n+" · "+diffLabel(pr)}
+  const p=buildPuzzle(n,seed,pr);
+  const resume=save.progress&&save.progress.id===id&&save.progress.grid.length===n*n?save.progress:null;
+  game={opt,id,label,subl,animal,p,n,grid:resume?resume.grid:Array(n*n).fill(0),elapsed:resume?resume.elapsed:0,hints:resume?resume.hints:0,freeHints:resume&&resume.freeHints!=null?resume.freeHints:FREE_HINTS,
+        hist:[],won:false,hintCell:-1,startAt:performance.now()};
+  renderGame();startTimer();
+}
+
+function stopTimer(){if(tick){clearInterval(tick);tick=null}}
+function startTimer(){stopTimer();game.startAt=performance.now()-game.elapsed*1000;tick=setInterval(()=>{if(!game||game.won)return;game.elapsed=(performance.now()-game.startAt)/1000;const t=document.getElementById("timer");if(t)t.textContent=fmt(game.elapsed);if(Math.floor(game.elapsed)%5===0)saveProgress()},500)}
+function saveProgress(){if(!game||game.won)return;save.progress={id:game.id,grid:game.grid,elapsed:game.elapsed,hints:game.hints,freeHints:game.freeHints};persist()}
+
+function analyze(){
+  const {n,p,grid}=game, cats=[];
+  for(let k=0;k<n*n;k++)if(grid[k]===2)cats.push(k);
+  const bad=new Set(), blocked=new Set();
+  const rowC=Array(n).fill(0),colC=Array(n).fill(0),regC=Array(n).fill(0);
+  for(const k of cats){const r=Math.floor(k/n),c=k%n;rowC[r]++;colC[c]++;regC[p.reg[r][c]]++}
+  for(let a=0;a<cats.length;a++)for(let b=a+1;b<cats.length;b++){
+    const r1=Math.floor(cats[a]/n),c1=cats[a]%n,r2=Math.floor(cats[b]/n),c2=cats[b]%n;
+    if(r1===r2||c1===c2||p.reg[r1][c1]===p.reg[r2][c2]||(Math.abs(r1-r2)<=1&&Math.abs(c1-c2)<=1)){bad.add(cats[a]);bad.add(cats[b])}
+  }
+  for(const k of cats){const r=Math.floor(k/n),c=k%n,g=p.reg[r][c];
+    for(let q=0;q<n*n;q++){if(q===k)continue;const rr=Math.floor(q/n),cc=q%n;
+      if(rr===r||cc===c||p.reg[rr][cc]===g||(Math.abs(rr-r)<=1&&Math.abs(cc-c)<=1))blocked.add(q)}}
+  const filled=x=>x.filter(v=>v===1).length;
+  return{cats,bad,blocked,rowsOk:filled(rowC),colsOk:filled(colC),regsOk:filled(regC)};
+}
+
+function renderGame(){
+  layer.innerHTML="";
+  const {n}=game;
+  app.innerHTML=`
+  <div class="topbar">
+    <button class="icon-btn" id="back" aria-label="처음으로"><svg viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></svg></button>
+    <div class="t"><h2>${game.label}</h2><p class="sub">${game.subl}</p></div>
+    <div class="timer num" id="timer" aria-label="경과 시간">${fmt(game.elapsed)}</div>
+  </div>
+  <div class="status" id="status"></div>
+  <div class="board-wrap" id="wrap"><div class="board" id="board" style="grid-template-columns:repeat(${n},1fr);grid-template-rows:repeat(${n},1fr)"></div></div>
+  <div class="tools">
+    <button class="tool" id="undo"><svg viewBox="0 0 24 24"><path d="M9 14 4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11"/></svg>되돌리기</button>
+    <button class="tool" id="clear"><svg viewBox="0 0 24 24"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/></svg>모두 지우기</button>
+    <button class="tool" id="hint"></button>
+    <button class="tool ${save.autoX?"on":""}" id="auto" aria-pressed="${save.autoX}"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"/></svg>자동 ×</button>
+  </div>
+  <p class="howto">한 번 탭 ×  ·  두 번 탭 ${game.animal.name}  ·  드래그로 × 여러 개<br>자동 ×를 켜 두면 동물을 둘 수 없는 칸이 흐리게 표시돼요</p>`;
+  document.getElementById("back").onclick=()=>{saveProgress();home()};
+  document.getElementById("undo").onclick=()=>{if(game.won||!game.hist.length)return;game.grid=game.hist.pop();draw()};
+  document.getElementById("clear").onclick=()=>{if(game.won||!game.grid.some(v=>v))return;game.hist.push(game.grid.slice());game.grid=Array(n*n).fill(0);draw();toast("판을 비웠어요. 되돌리기로 복구할 수 있어요")};
+  document.getElementById("hint").onclick=onHint;updateHintBtn();Ads.preload();
+  document.getElementById("auto").onclick=e=>{save.autoX=!save.autoX;persist();e.currentTarget.classList.toggle("on",save.autoX);e.currentTarget.setAttribute("aria-pressed",save.autoX);draw()};
+  buildBoard();draw();bindInput();window.scrollTo(0,0);
+}
+
+function buildBoard(){
+  const {n,p}=game, b=document.getElementById("board");let h="";
+  for(let r=0;r<n;r++)for(let c=0;c<n;c++){
+    const g=p.reg[r][c], col=p.colors[g];
+    const tt=r>0&&p.reg[r-1][c]!==g, tl=c>0&&p.reg[r][c-1]!==g;
+    h+=`<button class="cell${tt?" tt":""}${tl?" tl":""}" data-k="${r*n+c}" style="background:var(--r${col})${r===0?";border-top:0":""}${c===0?";border-left:0":""}" aria-label="${r+1}행 ${c+1}열"></button>`;
+  }
+  b.innerHTML=h;
+}
+
+function draw(){
+  const {n,grid}=game, a=analyze(), skin=game.animal;
+  const cells=document.getElementById("board").children;
+  for(let k=0;k<n*n;k++){
+    const el=cells[k], v=grid[k], want=v===2?"cat":v===1?"x":(save.autoX&&a.blocked.has(k))?"auto":"";
+    if(el.dataset.s!==want){el.dataset.s=want;el.innerHTML=want==="cat"?animalSVG(skin,"cat"):want==="x"?XSVG(false):want==="auto"?XSVG(true):""}
+    el.classList.toggle("bad",a.bad.has(k));
+    el.classList.toggle("hint",k===game.hintCell);
+    el.setAttribute("aria-label",`${Math.floor(k/n)+1}행 ${k%n+1}열${want==="cat"?" "+skin.name:want==="x"?" 표시":""}`);
+  }
+  const st=document.getElementById("status");
+  const cl=(x)=>x===n?"ok":"";
+  st.innerHTML=`<span class="num ${a.bad.size?"ng":a.cats.length===n?"ok":""}">${skin.name} ${a.cats.length}/${n}</span><span class="num ${cl(a.rowsOk)}">가로 ${a.rowsOk}/${n}</span><span class="num ${cl(a.colsOk)}">세로 ${a.colsOk}/${n}</span><span class="num ${cl(a.regsOk)}">색 구역 ${a.regsOk}/${n}</span>${a.bad.size?`<span class="ng">규칙에 맞지 않는 칸이 있어요</span>`:""}`;
+  if(a.cats.length===n&&!a.bad.size)win();
+}
+
+function setCell(k,v){if(game.grid[k]===v)return false;game.grid[k]=v;if(k===game.hintCell&&v===2)game.hintCell=-1;return true}
+
+function bindInput(){
+  const wrap=document.getElementById("wrap");
+  let down=null;
+  const cellAt=(x,y)=>{const el=document.elementFromPoint(x,y);const c=el&&el.closest&&el.closest(".cell");return c?+c.dataset.k:-1};
+  wrap.addEventListener("pointerdown",e=>{
+    if(game.won)return;const k=cellAt(e.clientX,e.clientY);if(k<0)return;
+    e.preventDefault();
+    down={k,moved:false,mode:game.grid[k]===0?"mark":game.grid[k]===1?"erase":null,snap:game.grid.slice(),touched:new Set([k])};
+    try{wrap.setPointerCapture(e.pointerId)}catch(_){}
+  });
+  wrap.addEventListener("pointermove",e=>{
+    if(!down||!down.mode)return;const k=cellAt(e.clientX,e.clientY);if(k<0||down.touched.has(k)&&k===down.k&&!down.moved)return;
+    if(k!==down.k&&!down.moved){down.moved=true;applyDrag(down.k)}
+    if(down.moved&&!down.touched.has(k)){down.touched.add(k);applyDrag(k)}
+  });
+  function applyDrag(k){let ch=false;if(down.mode==="mark"&&game.grid[k]===0)ch=setCell(k,1);if(down.mode==="erase"&&game.grid[k]===1)ch=setCell(k,0);if(ch)draw()}
+  const up=e=>{
+    if(!down)return;
+    if(!down.moved){const k=down.k;const v=game.grid[k];setCell(k,(v+1)%3)}
+    if(game.grid.some((v,i)=>v!==down.snap[i]))game.hist.push(down.snap);
+    if(game.hist.length>200)game.hist.shift();
+    down=null;draw();saveProgress();
+  };
+  wrap.addEventListener("pointerup",up);wrap.addEventListener("pointercancel",up);
+  wrap.addEventListener("keydown",e=>{
+    const c=e.target.closest&&e.target.closest(".cell");if(!c||game.won)return;const k=+c.dataset.k,n=game.n;
+    const mv={ArrowUp:-n,ArrowDown:n,ArrowLeft:-1,ArrowRight:1}[e.key];
+    if(mv!==undefined){e.preventDefault();const t=k+mv;if(t>=0&&t<n*n&&!(mv===-1&&k%n===0)&&!(mv===1&&k%n===n-1))document.getElementById("board").children[t].focus();return}
+    if(e.key===" "||e.key==="Enter"){e.preventDefault();game.hist.push(game.grid.slice());setCell(k,(game.grid[k]+1)%3);draw();saveProgress()}
+  });
+  // pointer handling covers clicks; stop the native click from doing anything extra
+}
+
+function updateHintBtn(){
+  const b=document.getElementById("hint");if(!b)return;
+  const bulb='<svg viewBox="0 0 24 24"><path d="M9 18h6M10 21h4M12 3a6 6 0 0 0-3.5 10.9c.6.5 1 1.2 1 2.1h5c0-.9.4-1.6 1-2.1A6 6 0 0 0 12 3z"/></svg>';
+  const tv='<svg viewBox="0 0 24 24"><rect x="3" y="6" width="18" height="13" rx="2.5"/><path d="M8 2.5l4 3.5 4-3.5M10.5 10.2v5.6l4.6-2.8z"/></svg>';
+  if(STORE_BUILD){b.innerHTML=`${bulb}힌트`;return}
+  b.innerHTML=game.freeHints>0?`${bulb}무료 힌트 ${game.freeHints}`:`${tv}광고 보고 힌트`;
+}
+function onHint(){
+  if(game.won)return;
+  if(STORE_BUILD){giveHint();return}
+  if(game.freeHints>0){game.freeHints--;giveHint();updateHintBtn();return}
+  layer.innerHTML=`<div class="overlay" role="dialog" aria-modal="true" aria-label="광고 보고 힌트 받기"><div class="sheet">
+    ${animalSVG(game.animal).replace("<svg ",'<svg style="width:64px;height:64px;margin:0 auto" ')}
+    <h2 style="font-size:24px">힌트가 필요하세요?</h2>
+    <p class="sub" style="font-size:14px;line-height:1.6">무료 힌트를 다 썼어요. 짧은 광고를 끝까지 보면 힌트 1개를 받아요.<br>힌트를 쓰면 이 판의 별이 하나 줄어요.</p>
+    <div class="btns"><button class="btn" id="watchAd">광고 보고 힌트 받기</button><button class="btn ghost" id="noAd">혼자 더 풀어볼게요</button></div>
+  </div></div>`;
+  document.getElementById("noAd").onclick=()=>{layer.innerHTML=""};
+  document.getElementById("watchAd").onclick=()=>{
+    layer.innerHTML="";stopTimer(); // 광고 보는 동안 시간은 멈춰요
+    Ads.showRewarded({
+      onReward:()=>{if(game&&!game.won)giveHint()},
+      onClose:(rewarded)=>{if(!game)return;if(!game.won)startTimer();if(!rewarded)toast("광고를 끝까지 보면 힌트를 받아요");updateHintBtn()},
+      onError:()=>{if(!game)return;if(!game.won)startTimer();toast("지금은 광고를 불러올 수 없어요. 잠시 뒤 다시 눌러주세요")}
+    });
+  };
+}
+function giveHint(){
+  if(game.won)return;const {n,p,grid}=game;
+  // first: a misplaced cat is the most useful thing to point out
+  for(let k=0;k<n*n;k++){if(grid[k]===2&&p.sol[Math.floor(k/n)]!==k%n){game.hist.push(grid.slice());grid[k]=0;game.hints++;draw();toast("여기는 "+game.animal.name+" 자리가 아니에요");return}}
+  const rows=[...Array(n).keys()].filter(r=>grid[r*n+p.sol[r]]!==2);
+  if(!rows.length)return;
+  // pick the row whose region is smallest — the most "teachable" spot
+  const size=r=>p.reg.flat().filter(g=>g===p.reg[r][p.sol[r]]).length;
+  rows.sort((a,b)=>size(a)-size(b));const r=rows[0],k=r*n+p.sol[r];
+  game.hist.push(grid.slice());grid[k]=2;game.hints++;game.hintCell=k;draw();saveProgress();
+  toast(game.animal.name+" 한 마리를 찾아드렸어요");
+}
+
+function win(){
+  if(game.won)return;game.won=true;stopTimer();
+  const {n,elapsed,hints,opt}=game;
+  let stars=3;if(hints>0)stars--;if(elapsed>par(n,game.p.score))stars--;stars=Math.max(1,stars);
+  const before=unlockedCount();
+  save.cleared++;save.progress=null;
+  let streakMsg="";
+  if(opt.kind==="daily"){
+    const first=!save.daily[today];
+    if(first){save.streak=save.lastDaily===yday?save.streak+1:save.lastDaily===today?save.streak:1;save.lastDaily=today;streakMsg=`연속 ${save.streak}일째`}
+    const prev=save.daily[today];save.daily[today]={time:prev?Math.min(prev.time,elapsed):elapsed,stars:Math.max(prev?prev.stars:0,stars)};
+  }else{
+    save.stars[opt.level]=Math.max(save.stars[opt.level]||0,stars);
+    if(opt.level===save.stage)save.stage++;
+  }
+  persist();
+  const unlocked=ANIMALS.slice(before,unlockedCount());
+  document.getElementById("board").classList.add("won");
+  [...document.getElementById("board").querySelectorAll("svg.cat")].forEach((s,i)=>s.style.animationDelay=(i*70)+"ms");
+  const share=`숨바꼭질 동물마을 ${game.label}\n${"★".repeat(stars)}${"☆".repeat(3-stars)}  ${fmt(elapsed)}${hints?`  힌트 ${hints}번`:""}\n${n}×${n} 판에서 ${game.animal.name} ${n}마리를 찾았어요`;
+  setTimeout(()=>{
+    layer.innerHTML=`<div class="overlay" role="dialog" aria-modal="true" aria-label="퍼즐 완료"><div class="sheet">
+      <h2>${game.animal.name} 친구들을 다 찾았어요!</h2>
+      <div class="stars">${STAR(stars>=1)}${STAR(stars>=2)}${STAR(stars>=3)}</div>
+      <div class="result"><div><strong class="num">${fmt(elapsed)}</strong><span>걸린 시간 · 기준 ${fmt(par(n,game.p.score))}</span></div><div><strong class="num">${hints}번</strong><span>힌트 사용${streakMsg?" · "+streakMsg:""}</span></div></div>
+      ${unlocked.map(k=>`<div class="unlock">${animalSVG(k)}<span>새 동네 <b>${k.place}</b>에 도착했어요. ${iga(k.name)} 도감에 들어왔어요.</span></div>`).join("")}
+      <textarea class="share-text" id="shareText" rows="3" readonly>${share}</textarea>
+      <div class="btns">
+        ${opt.kind==="stage"?`<button class="btn" id="next">${opt.level+1}단계로</button>`:`<button class="btn" id="toStage">단계 도전하러 가기</button>`}
+        <button class="btn ghost" id="copy">결과 복사</button>
+        <button class="btn ghost" id="toHome">처음으로</button>
+      </div></div></div>`;
+    const nx=document.getElementById("next");if(nx)nx.onclick=()=>start({kind:"stage",level:opt.level+1});
+    const ts=document.getElementById("toStage");if(ts)ts.onclick=()=>start({kind:"stage",level:save.stage});
+    document.getElementById("toHome").onclick=home;
+    document.getElementById("copy").onclick=()=>{
+      const ta=document.getElementById("shareText");
+      try{navigator.clipboard.writeText(share).then(()=>toast("복사했어요"),()=>{ta.select();toast("글자를 길게 눌러 복사해 주세요")})}catch(e){ta.select();toast("글자를 길게 눌러 복사해 주세요")}
+    };
+  },900);
+}
+
+home();
+})();
+</script>
+
+<p class="legal"><a href="privacy.html">개인정보처리방침</a></p>
+<script>
+if("serviceWorker" in navigator){window.addEventListener("load",()=>{navigator.serviceWorker.register("sw.js").catch(()=>{})})}
+</script>
+</body>
+</html>
